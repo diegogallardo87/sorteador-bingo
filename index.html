@@ -1,29 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Ruleta de Bingo</title>
+<title>Sorteador Profesional</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
 
 <style>
 
 body{
-    font-family: Arial;
+    font-family:'Poppins', sans-serif;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    color:white;
     text-align:center;
-    background:#f4f6fb;
+    margin:0;
 }
 
 h1{
-    margin-top:30px;
+    margin-top:20px;
+    font-weight:600;
+}
+
+#evento{
+    opacity:.9;
+    margin-bottom:10px;
+}
+
+.pointer{
+    width:0;
+    height:0;
+    border-left:18px solid transparent;
+    border-right:18px solid transparent;
+    border-top:35px solid white;
+    margin:10px auto -15px auto;
+    z-index:10;
+    position:relative;
+}
+
+#wheel-container{
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 #wheel{
-    margin:40px auto;
-    width:320px;
-    height:320px;
+    width:420px;
+    height:420px;
     border-radius:50%;
-    border:10px solid #333;
+    border:12px solid white;
     position:relative;
     overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
 }
 
 .slice{
@@ -33,33 +60,46 @@ h1{
     top:50%;
     left:50%;
     transform-origin:0% 0%;
-    background:#6c8cff;
-    color:white;
-    font-size:14px;
     display:flex;
     align-items:center;
     justify-content:center;
+    font-size:14px;
+    font-weight:600;
 }
 
-#spin{
-    padding:15px 40px;
-    font-size:22px;
+button{
+    margin-top:25px;
+    padding:16px 45px;
+    font-size:20px;
+    border:none;
+    border-radius:12px;
+    background:#00f5a0;
+    color:#003;
+    font-weight:600;
     cursor:pointer;
+    box-shadow:0 8px 25px rgba(0,0,0,.3);
+}
+
+button:hover{
+    transform:scale(1.05);
 }
 
 #resultado{
-    font-size:36px;
-    margin-top:30px;
-    font-weight:bold;
+    font-size:42px;
+    margin-top:25px;
+    font-weight:600;
 }
 
-.pointer{
-    width:0;
-    height:0;
-    border-left:20px solid transparent;
-    border-right:20px solid transparent;
-    border-bottom:40px solid #e63946;
-    margin:auto;
+#contador{
+    margin-top:10px;
+    opacity:.85;
+}
+
+canvas{
+    position:fixed;
+    pointer-events:none;
+    top:0;
+    left:0;
 }
 
 </style>
@@ -67,82 +107,168 @@ h1{
 
 <body>
 
-<h1>🎉 Ruleta de Bingo 🎉</h1>
+<h1>🎉 Sorteador de Bingo 🎉</h1>
+<div id="evento"></div>
 
 <div class="pointer"></div>
-<div id="wheel"></div>
 
-<button id="spin">Girar</button>
+<div id="wheel-container">
+    <div id="wheel"></div>
+</div>
+
+<button onclick="spin()">GIRAR</button>
 
 <div id="resultado"></div>
+<div id="contador"></div>
+
+<canvas id="confetti"></canvas>
+
+<audio id="tick" src="https://assets.mixkit.co/sfx/preview/mixkit-slot-machine-spin-1930.mp3"></audio>
+<audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
 
 <script>
 
-// Obtener palabras desde URL
+// PARAMETROS DESDE URL
 const params = new URLSearchParams(window.location.search);
-let lista = params.get("lista");
 
-let palabras = lista ? lista.split(",") : [
-"Ejemplo 1","Ejemplo 2","Ejemplo 3","Ejemplo 4"
-];
+let lista = params.get("lista");
+let evento = params.get("evento");
+
+document.getElementById("evento").innerText = evento ? evento : "";
+
+let palabras = lista ? decodeURIComponent(lista).split(",") :
+["Ejemplo 1","Ejemplo 2","Ejemplo 3"];
 
 const wheel = document.getElementById("wheel");
 
+function color(i){
+    const colores=["#ff6b6b","#feca57","#48dbfb","#1dd1a1","#5f27cd","#ff9ff3"];
+    return colores[i%colores.length];
+}
+
 function crearRuleta(){
 
-wheel.innerHTML = "";
+wheel.innerHTML="";
 
-let angle = 360 / palabras.length;
+let angle = 360/palabras.length;
 
-palabras.forEach((p, i) => {
+palabras.forEach((p,i)=>{
 
-let slice = document.createElement("div");
+let slice=document.createElement("div");
+slice.className="slice";
+slice.style.background=color(i);
+slice.style.transform=`rotate(${i*angle}deg) skewY(${90-angle}deg)`;
 
-slice.className = "slice";
-slice.style.transform = `rotate(${i*angle}deg) skewY(${90-angle}deg)`;
-slice.innerHTML = `<span style="transform:skewY(-${90-angle}deg) rotate(${angle/2}deg);display:block;width:150px;">${p}</span>`;
+slice.innerHTML=
+`<span style="
+transform:skewY(-${90-angle}deg) rotate(${angle/2}deg);
+display:block;
+width:160px;">
+${p}
+</span>`;
 
 wheel.appendChild(slice);
 
 });
 
+document.getElementById("contador").innerText =
+"Quedan "+palabras.length+" palabras";
+
 }
 
 crearRuleta();
 
-let rotation = 0;
+let rotation=0;
 
-document.getElementById("spin").onclick = function(){
+function spin(){
 
-if(palabras.length === 0){
-document.getElementById("resultado").innerHTML = "No quedan palabras";
+if(palabras.length===0){
+document.getElementById("resultado").innerText="Sin palabras";
 return;
 }
 
-let randomIndex = Math.floor(Math.random()*palabras.length);
-let angle = 360 / palabras.length;
+document.getElementById("tick").play();
 
-let spinAngle = (360*5) + (randomIndex*angle);
+let randomIndex=Math.floor(Math.random()*palabras.length);
+let angle=360/palabras.length;
 
-rotation += spinAngle;
+rotation += 360*6 + randomIndex*angle;
 
-wheel.style.transition = "transform 4s cubic-bezier(.17,.67,.33,1)";
-wheel.style.transform = `rotate(-${rotation}deg)`;
+wheel.style.transition="transform 5s cubic-bezier(.1,.7,.1,1)";
+wheel.style.transform=`rotate(-${rotation}deg)`;
 
 setTimeout(()=>{
 
-let ganador = palabras.splice(randomIndex,1);
+document.getElementById("tick").pause();
+document.getElementById("win").play();
 
-document.getElementById("resultado").innerHTML = ganador;
+let ganador=palabras.splice(randomIndex,1);
+
+document.getElementById("resultado").innerText=ganador;
 
 crearRuleta();
 
-},4000);
+confetti();
 
-};
+},5000);
+
+}
+
+// CONFETTI SIMPLE
+function confetti(){
+
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+
+for(let i=0;i<150;i++){
+pieces.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height- canvas.height,
+r:Math.random()*6+4,
+d:Math.random()*50
+});
+}
+
+let angle=0;
+
+function draw(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+angle+=0.01;
+
+for(let i=0;i<pieces.length;i++){
+
+let p=pieces[i];
+
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2,false);
+ctx.fillStyle=color(i);
+ctx.fill();
+
+p.y+=Math.cos(angle+p.d)+3;
+
+if(p.y>canvas.height){
+p.y=-10;
+}
+
+}
+
+requestAnimationFrame(draw);
+}
+
+draw();
+
+setTimeout(()=>ctx.clearRect(0,0,canvas.width,canvas.height),4000);
+
+}
 
 </script>
 
 </body>
 </html>
-
