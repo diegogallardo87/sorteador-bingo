@@ -2,52 +2,116 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Sorteador</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorteador Profesional</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
 
 <style>
 
 body{
-    font-family:'Poppins',sans-serif;
-    background:linear-gradient(135deg,#4facfe,#00f2fe);
-    margin:0;
-    text-align:center;
+    font-family:'Poppins', sans-serif;
+    background:linear-gradient(135deg,#667eea,#764ba2);
     color:white;
+    text-align:center;
+    margin:0;
 }
 
 h1{
     margin-top:20px;
+    font-weight:800;
 }
 
-canvas{
-    margin-top:30px;
-}
-
-button{
-    margin-top:25px;
-    padding:15px 45px;
-    font-size:20px;
-    border:none;
-    border-radius:10px;
-    background:#00e676;
-    cursor:pointer;
-    font-weight:600;
-}
-
-#resultado{
-    font-size:38px;
-    margin-top:20px;
-    font-weight:600;
+#evento{
+    opacity:.9;
+    margin-bottom:10px;
 }
 
 .pointer{
     width:0;
     height:0;
-    border-left:20px solid transparent;
-    border-right:20px solid transparent;
-    border-bottom:40px solid white;
-    margin:auto;
+    border-left:18px solid transparent;
+    border-right:18px solid transparent;
+    border-top:35px solid white;
+    margin:10px auto -15px auto;
+    z-index:10;
+    position:relative;
+}
+
+#wheel-container{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+#wheel{
+    width:420px;
+    height:420px;
+    border-radius:50%;
+    border:12px solid white;
+    position:relative;
+    overflow:hidden;
+    box-shadow:
+    inset 0 0 40px rgba(0,0,0,.4),
+    0 20px 60px rgba(0,0,0,.4);
+}
+
+.slice{
+    position:absolute;
+    width:50%;
+    height:50%;
+    top:50%;
+    left:50%;
+    transform-origin:0% 0%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+    font-weight:600;
+}
+
+button{
+    margin-top:20px;
+    padding:14px 35px;
+    font-size:18px;
+    border:none;
+    border-radius:12px;
+    background:#00f5a0;
+    color:#003;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:0 8px 25px rgba(0,0,0,.3);
+    margin-right:10px;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+#resultado{
+    font-size:64px;
+    margin-top:25px;
+    font-weight:800;
+}
+
+#contador{
+    margin-top:10px;
+    opacity:.85;
+}
+
+#historial{
+    margin-top:20px;
+    max-width:400px;
+    margin-left:auto;
+    margin-right:auto;
+    opacity:.9;
+}
+
+canvas{
+    position:fixed;
+    pointer-events:none;
+    top:0;
+    left:0;
 }
 
 </style>
@@ -55,60 +119,237 @@ button{
 
 <body>
 
-<h1 id="titulo">🎉 Sorteo 🎉</h1>
+<h1>🎉 Sorteador Profesional 🎉</h1>
+<div id="evento"></div>
 
 <div class="pointer"></div>
 
-<canvas id="wheel" width="450" height="450"></canvas>
+<div id="wheel-container">
+    <div id="wheel"></div>
+</div>
 
-<br>
-<button onclick="girar()">GIRAR</button>
+<div>
+<button onclick="spin()">GIRAR</button>
+<button onclick="resetear()">REINICIAR</button>
+<button onclick="fullscreen()">PANTALLA COMPLETA</button>
+</div>
 
 <div id="resultado"></div>
+<div id="contador"></div>
+<div id="historial"></div>
+
+<canvas id="confetti"></canvas>
+
+<audio id="tick" src="https://assets.mixkit.co/sfx/preview/mixkit-slot-machine-spin-1930.mp3"></audio>
+<audio id="win" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
 
 <script>
 
-// PARAMETROS DEL LINK
+////////////////////////////////////////////////////
+// CARGA POR ID DESDE GITHUB
+////////////////////////////////////////////////////
+
 const params = new URLSearchParams(window.location.search);
+const id = params.get("id") || "demo";
 
-const titulo = params.get("titulo");
-const lista = params.get("lista");
+// Cambia TU_USUARIO y TU_REPO
+const DATA_URL = `https://raw.githubusercontent.com/diegogallardo87/bingo-data/${id}.json`;
 
-if(titulo){
-    document.getElementById("titulo").innerText = decodeURIComponent(titulo);
+let palabras = [];
+let originales = [];
+let historial = [];
+
+fetch(DATA_URL)
+.then(r=>{
+    if(!r.ok) throw new Error("No se encontró el bingo");
+    return r.json();
+})
+.then(data=>{
+    palabras = [...data.lista];
+    originales = [...data.lista];
+    document.getElementById("evento").innerText = data.evento || "";
+    crearRuleta();
+})
+.catch(()=>{
+    // fallback demo
+    palabras=["Ejemplo 1","Ejemplo 2","Ejemplo 3"];
+    originales=[...palabras];
+    crearRuleta();
+});
+
+////////////////////////////////////////////////////
+
+const wheel = document.getElementById("wheel");
+
+function color(i){
+    const colores=["#ff6b6b","#feca57","#48dbfb","#1dd1a1","#5f27cd","#ff9ff3"];
+    return colores[i%colores.length];
 }
 
-let palabras = lista
-? decodeURIComponent(lista).split(",")
-: ["Ejemplo 1","Ejemplo 2","Ejemplo 3"];
+function crearRuleta(){
 
-const canvas = document.getElementById("wheel");
-const ctx = canvas.getContext("2d");
+wheel.innerHTML="";
 
-let startAngle = 0;
+let angle = 360/palabras.length;
 
-function colores(i){
-    const c=[
-        "#ff7675","#74b9ff","#55efc4",
-        "#ffeaa7","#a29bfe","#fd79a8"
-    ];
-    return c[i % c.length];
+palabras.forEach((p,i)=>{
+
+let slice=document.createElement("div");
+slice.className="slice";
+slice.style.background=color(i);
+slice.style.transform=`rotate(${i*angle}deg) skewY(${90-angle}deg)`;
+
+slice.innerHTML=
+`<span style="
+transform:skewY(-${90-angle}deg) rotate(${angle/2}deg);
+display:block;
+width:160px;">
+${p}
+</span>`;
+
+wheel.appendChild(slice);
+
+});
+
+actualizarUI();
 }
 
-function dibujarRuleta(){
+function actualizarUI(){
 
-const arc = Math.PI*2 / palabras.length;
+    document.getElementById("contador").innerText =
+    "Quedan "+palabras.length+" palabras";
 
-ctx.clearRect(0,0,500,500);
+    document.getElementById("historial").innerHTML =
+    historial.length
+    ? "<b>Historial:</b><br>" + historial.join("<br>")
+    : "";
+}
 
-palabras.forEach((palabra,i)=>{
+let rotation=0;
+let girando=false;
 
-const angle = startAngle + i*arc;
+function spin(){
+
+if(girando) return;
+
+if(palabras.length===0){
+document.getElementById("resultado").innerText="SIN PALABRAS";
+return;
+}
+
+girando=true;
+
+document.getElementById("tick").play();
+
+let angle=360/palabras.length;
+
+// Giro totalmente aleatorio
+let extra=Math.random()*360;
+
+rotation = rotation % 360;
+rotation += 360*6 + extra;
+
+wheel.style.transition="transform 5s cubic-bezier(.12,.8,.18,1)";
+wheel.style.transform=`rotate(-${rotation}deg)`;
+
+setTimeout(()=>{
+
+let finalAngle = (rotation % 360);
+let index = Math.floor((finalAngle)/angle);
+index = palabras.length-1-index;
+if(index<0) index=0;
+
+let ganador=palabras.splice(index,1)[0];
+
+historial.unshift("🎉 " + ganador);
+
+
+document.getElementById("resultado").innerText=ganador.toUpperCase();
+
+crearRuleta();
+
+confetti();
+
+document.getElementById("tick").pause();
+document.getElementById("win").play();
+
+girando=false;
+
+},5000);
+
+}
+
+////////////////////////////////////////////////////
+
+function resetear(){
+    palabras=[...originales];
+    historial=[];
+    document.getElementById("resultado").innerText="";
+    crearRuleta();
+}
+
+function fullscreen(){
+    document.documentElement.requestFullscreen();
+}
+
+////////////////////////////////////////////////////
+// CONFETTI
+////////////////////////////////////////////////////
+
+function confetti(){
+
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+
+for(let i=0;i<150;i++){
+pieces.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height- canvas.height,
+r:Math.random()*6+4,
+d:Math.random()*50
+});
+}
+
+let angle=0;
+
+function draw(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+angle+=0.01;
+
+for(let i=0;i<pieces.length;i++){
+
+let p=pieces[i];
 
 ctx.beginPath();
-ctx.moveTo(225,225);
-ctx.arc(225,225,225,angle,angle+arc);
-ctx.fillStyle = colores(i);
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2,false);
+ctx.fillStyle=color(i);
 ctx.fill();
 
-//
+p.y+=Math.cos(angle+p.d)+3;
+
+if(p.y>canvas.height){
+p.y=-10;
+}
+
+}
+
+requestAnimationFrame(draw);
+}
+
+draw();
+
+setTimeout(()=>ctx.clearRect(0,0,canvas.width,canvas.height),4000);
+
+}
+
+</script>
+
+</body>
+</html>
