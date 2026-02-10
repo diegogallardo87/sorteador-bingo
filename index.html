@@ -25,12 +25,6 @@ h1{
 #loading{
     margin-top:40px;
     font-size:22px;
-    opacity:.9;
-}
-
-#evento{
-    opacity:.9;
-    margin-bottom:10px;
 }
 
 .pointer{
@@ -40,22 +34,17 @@ h1{
     border-right:18px solid transparent;
     border-top:35px solid white;
     margin:10px auto -15px auto;
-    z-index:10;
-    position:relative;
 }
 
 #wheel-container{
     display:flex;
     justify-content:center;
-    align-items:center;
 }
 
 canvas#wheel{
     border-radius:50%;
     border:12px solid white;
-    box-shadow:
-    inset 0 0 40px rgba(0,0,0,.4),
-    0 20px 60px rgba(0,0,0,.4);
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
 }
 
 button{
@@ -68,24 +57,13 @@ button{
     color:#003;
     font-weight:600;
     cursor:pointer;
-    box-shadow:0 8px 25px rgba(0,0,0,.3);
     margin-right:10px;
 }
 
-button:hover{
-    transform:scale(1.05);
-}
-
 #resultado{
-    font-size:72px;
+    font-size:64px;
     margin-top:25px;
     font-weight:800;
-    line-height:1.1;
-}
-
-#contador{
-    margin-top:10px;
-    opacity:.85;
 }
 
 #historial{
@@ -93,7 +71,6 @@ button:hover{
     max-width:400px;
     margin-left:auto;
     margin-right:auto;
-    opacity:.9;
 }
 
 canvas#confetti{
@@ -115,11 +92,11 @@ canvas#confetti{
 <div class="pointer"></div>
 
 <div id="wheel-container">
-    <canvas id="wheel" width="500" height="500"></canvas>
+<canvas id="wheel" width="500" height="500"></canvas>
 </div>
 
 <div id="controls">
-<button id="spinBtn" onclick="spin()">GIRAR</button>
+<button onclick="spin()">GIRAR</button>
 <button onclick="resetear()">REINICIAR</button>
 <button onclick="fullscreen()">PANTALLA COMPLETA</button>
 </div>
@@ -138,7 +115,6 @@ canvas#confetti{
 ////////////////////////////////////////////////////
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id") || "demo";
-const modoTV = params.get("modo");
 
 const DATA_URL = `https://raw.githubusercontent.com/diegogallardo87/bingo-data/main/bingos/${id}.json?nocache=${Date.now()}`;
     
@@ -146,58 +122,42 @@ let palabras = [];
 let originales = [];
 let historial = [];
 
-////////////////////////////////////////////////////
-// CANVAS
-////////////////////////////////////////////////////
-
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const radius = canvas.width/2;
-
-function color(i){
-    const hue = Math.floor((360 / palabras.length) * i);
-    return `hsl(${hue}, 75%, 60%)`;
-}
 
 ////////////////////////////////////////////////////
 // FETCH
 ////////////////////////////////////////////////////
 
 fetch(DATA_URL)
-.then(r=>{
-    if(!r.ok) throw new Error("No se encontró el bingo");
-    return r.json();
-})
+.then(r=>r.json())
 .then(data=>{
 
-    const guardado = localStorage.getItem(id);
+const guardado = localStorage.getItem(id);
 
-    if(guardado){
-        const estado = JSON.parse(guardado);
-        palabras = estado.palabras;
-        historial = estado.historial;
-    }else{
-        palabras = [...data.lista];
-        historial = [];
-    }
+if(guardado){
+const estado = JSON.parse(guardado);
+palabras = estado.palabras;
+historial = estado.historial;
+}else{
+palabras = [...data.lista];
+}
 
-    originales = [...data.lista];
+originales = [...data.lista];
 
-    document.getElementById("evento").innerText = data.evento || "";
-    document.getElementById("loading").style.display="none";
+document.getElementById("evento").innerText = data.evento || "";
+document.getElementById("loading").style.display="none";
 
-    if(modoTV === "tv"){
-        document.getElementById("controls").style.display="none";
-    }
-
-    crearRuleta();
-})
-.catch(()=>{
-    document.body.innerHTML = `
-        <h1>Bingo no encontrado</h1>
-        <p>Verifica el enlace.</p>
-    `;
+crearRuleta();
 });
+
+////////////////////////////////////////////////////
+
+function color(i){
+const hue = Math.floor((360 / palabras.length) * i);
+return `hsl(${hue},75%,60%)`;
+}
 
 ////////////////////////////////////////////////////
 // CREAR RULETA
@@ -207,21 +167,19 @@ function crearRuleta(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-let angle = (2*Math.PI)/palabras.length;
+const angle = (2*Math.PI)/palabras.length;
 
 palabras.forEach((p,i)=>{
 
-let start = i*angle;
-let end = start + angle;
+const start = i*angle;
+const end = start + angle;
 
-// slice
 ctx.beginPath();
 ctx.moveTo(radius,radius);
 ctx.arc(radius,radius,radius,start,end);
-ctx.fillStyle = color(i);
+ctx.fillStyle=color(i);
 ctx.fill();
 
-// texto
 ctx.save();
 
 ctx.translate(radius,radius);
@@ -230,7 +188,7 @@ ctx.rotate(start + angle/2);
 ctx.textAlign="right";
 ctx.fillStyle="#fff";
 
-let fontSize = Math.max(14, 34 - palabras.length*0.7);
+let fontSize = Math.max(16, 36 - palabras.length*0.7);
 ctx.font=`bold ${fontSize}px Poppins`;
 
 ctx.fillText(p, radius-20, 8);
@@ -243,8 +201,6 @@ actualizarUI();
 }
 
 ////////////////////////////////////////////////////
-// UI
-////////////////////////////////////////////////////
 
 function actualizarUI(){
 
@@ -253,7 +209,7 @@ document.getElementById("contador").innerText =
 
 document.getElementById("historial").innerHTML =
 historial.length
-? "<b>Historial:</b><br>" + historial.join("<br>")
+? "<b>Historial:</b><br>"+historial.join("<br>")
 : "";
 
 localStorage.setItem(id, JSON.stringify({
@@ -263,42 +219,42 @@ historial
 }
 
 ////////////////////////////////////////////////////
-// SPIN PRO
+// SPIN PERFECTAMENTE ALINEADO
 ////////////////////////////////////////////////////
 
-let rotation=0;
+let rotation = 0;
 let girando=false;
 
 function spin(){
 
 if(girando) return;
-
-if(palabras.length===0){
-document.getElementById("resultado").innerText="SIN PALABRAS";
-return;
-}
+if(palabras.length===0) return;
 
 girando=true;
 document.getElementById("tick").play();
 
-let angle = 360/palabras.length;
-let index = Math.floor(Math.random()*palabras.length);
+const sliceAngle = 360/palabras.length;
+const index = Math.floor(Math.random()*palabras.length);
 
-let stopAngle = index*angle + angle/2;
-let vueltas = 8 + Math.floor(Math.random()*5);
+// Aguja está arriba → 270°
+const pointerAngle = 270;
 
-let finalRotation = rotation + vueltas*360 + (360-stopAngle);
+const targetAngle = index*sliceAngle + sliceAngle/2;
+const delta = pointerAngle - targetAngle;
+
+const spins = 8 + Math.floor(Math.random()*4);
+const finalRotation = rotation + spins*360 + delta;
 
 let start=null;
-let duration=5000;
+const duration=5200;
 
-function animate(timestamp){
+function animate(ts){
 
-if(!start) start=timestamp;
+if(!start) start=ts;
 
-let progress = timestamp-start;
+let progress = ts-start;
 let t = progress/duration;
-let ease = 1-Math.pow(1-t,4);
+let ease = 1-Math.pow(1-t,5);
 
 let current = rotation + (finalRotation-rotation)*ease;
 
@@ -306,19 +262,21 @@ ctx.setTransform(1,0,0,1,0,0);
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
 ctx.translate(radius,radius);
-ctx.rotate(-current*Math.PI/180);
+ctx.rotate(current*Math.PI/180);
 ctx.translate(-radius,-radius);
 
 crearRuleta();
 
 if(progress < duration){
+
 requestAnimationFrame(animate);
+
 }else{
 
 rotation = finalRotation % 360;
 
 let ganador = palabras.splice(index,1)[0];
-historial.unshift("🎉 " + ganador);
+historial.unshift("🎉 "+ganador);
 
 document.getElementById("resultado").innerText=ganador.toUpperCase();
 
@@ -366,7 +324,7 @@ let pieces=[];
 for(let i=0;i<150;i++){
 pieces.push({
 x:Math.random()*canvasC.width,
-y:Math.random()*canvasC.height- canvasC.height,
+y:Math.random()*canvasC.height-canvasC.height,
 r:Math.random()*6+4,
 d:Math.random()*50
 });
@@ -379,21 +337,16 @@ function draw(){
 ctxC.clearRect(0,0,canvasC.width,canvasC.height);
 angle+=0.01;
 
-for(let i=0;i<pieces.length;i++){
-
-let p=pieces[i];
+for(let p of pieces){
 
 ctxC.beginPath();
-ctxC.arc(p.x,p.y,p.r,0,Math.PI*2,false);
+ctxC.arc(p.x,p.y,p.r,0,Math.PI*2);
 ctxC.fillStyle=`hsl(${Math.random()*360},75%,60%)`;
 ctxC.fill();
 
-p.y+=Math.cos(angle+p.d)+3;
+p.y+=3;
 
-if(p.y>canvasC.height){
-p.y=-10;
-}
-
+if(p.y>canvasC.height) p.y=-10;
 }
 
 requestAnimationFrame(draw);
@@ -409,4 +362,3 @@ setTimeout(()=>ctxC.clearRect(0,0,canvasC.width,canvasC.height),4000);
 
 </body>
 </html>
-
