@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ruleta de Bingo</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    text-align:center;
+    background:#f4f6fb;
+}
+
+h1{
+    margin-top:30px;
+}
+
+#wheel{
+    margin:40px auto;
+    width:320px;
+    height:320px;
+    border-radius:50%;
+    border:10px solid #333;
+    position:relative;
+    overflow:hidden;
+}
+
+.slice{
+    position:absolute;
+    width:50%;
+    height:50%;
+    top:50%;
+    left:50%;
+    transform-origin:0% 0%;
+    background:#6c8cff;
+    color:white;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+#spin{
+    padding:15px 40px;
+    font-size:22px;
+    cursor:pointer;
+}
+
+#resultado{
+    font-size:36px;
+    margin-top:30px;
+    font-weight:bold;
+}
+
+.pointer{
+    width:0;
+    height:0;
+    border-left:20px solid transparent;
+    border-right:20px solid transparent;
+    border-bottom:40px solid #e63946;
+    margin:auto;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🎉 Ruleta de Bingo 🎉</h1>
+
+<div class="pointer"></div>
+<div id="wheel"></div>
+
+<button id="spin">Girar</button>
+
+<div id="resultado"></div>
+
+<script>
+
+// Obtener palabras desde URL
+const params = new URLSearchParams(window.location.search);
+let lista = params.get("lista");
+
+let palabras = lista ? lista.split(",") : [
+"Ejemplo 1","Ejemplo 2","Ejemplo 3","Ejemplo 4"
+];
+
+const wheel = document.getElementById("wheel");
+
+function crearRuleta(){
+
+wheel.innerHTML = "";
+
+let angle = 360 / palabras.length;
+
+palabras.forEach((p, i) => {
+
+let slice = document.createElement("div");
+
+slice.className = "slice";
+slice.style.transform = `rotate(${i*angle}deg) skewY(${90-angle}deg)`;
+slice.innerHTML = `<span style="transform:skewY(-${90-angle}deg) rotate(${angle/2}deg);display:block;width:150px;">${p}</span>`;
+
+wheel.appendChild(slice);
+
+});
+
+}
+
+crearRuleta();
+
+let rotation = 0;
+
+document.getElementById("spin").onclick = function(){
+
+if(palabras.length === 0){
+document.getElementById("resultado").innerHTML = "No quedan palabras";
+return;
+}
+
+let randomIndex = Math.floor(Math.random()*palabras.length);
+let angle = 360 / palabras.length;
+
+let spinAngle = (360*5) + (randomIndex*angle);
+
+rotation += spinAngle;
+
+wheel.style.transition = "transform 4s cubic-bezier(.17,.67,.33,1)";
+wheel.style.transform = `rotate(-${rotation}deg)`;
+
+setTimeout(()=>{
+
+let ganador = palabras.splice(randomIndex,1);
+
+document.getElementById("resultado").innerHTML = ganador;
+
+crearRuleta();
+
+},4000);
+
+};
+
+</script>
+
+</body>
+</html>
+
