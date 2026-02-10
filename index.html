@@ -22,6 +22,12 @@ h1{
     font-weight:800;
 }
 
+#loading{
+    margin-top:40px;
+    font-size:22px;
+    opacity:.9;
+}
+
 #evento{
     opacity:.9;
     margin-bottom:10px;
@@ -89,9 +95,10 @@ button:hover{
 }
 
 #resultado{
-    font-size:64px;
+    font-size:72px;
     margin-top:25px;
     font-weight:800;
+    line-height:1.1;
 }
 
 #contador{
@@ -120,6 +127,7 @@ canvas{
 <body>
 
 <h1>🎉 Personaliza tu Bingo 🎉</h1>
+<div id="loading">Cargando bingo...</div>
 <div id="evento"></div>
 
 <div class="pointer"></div>
@@ -128,8 +136,8 @@ canvas{
     <div id="wheel"></div>
 </div>
 
-<div>
-<button onclick="spin()">GIRAR</button>
+<div id="controls">
+<button id="spinBtn" onclick="spin()">GIRAR</button>
 <button onclick="resetear()">REINICIAR</button>
 <button onclick="fullscreen()">PANTALLA COMPLETA</button>
 </div>
@@ -146,17 +154,22 @@ canvas{
 <script>
 
 ////////////////////////////////////////////////////
-// CARGA POR ID DESDE GITHUB
+// PARAMETROS
 ////////////////////////////////////////////////////
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id") || "demo";
+const modoTV = params.get("modo");
 
-const DATA_URL = `https://raw.githubusercontent.com/diegogallardo87/bingo-data/main/bingos/${id}.json`;
+const DATA_URL = `https://raw.githubusercontent.com/diegogallardo87/bingo-data/main/bingos/${id}.json?nocache=${Date.now()}`;
     
 let palabras = [];
 let originales = [];
 let historial = [];
+
+////////////////////////////////////////////////////
+// FETCH
+////////////////////////////////////////////////////
 
 fetch(DATA_URL)
 .then(r=>{
@@ -164,25 +177,45 @@ fetch(DATA_URL)
     return r.json();
 })
 .then(data=>{
-    palabras = [...data.lista];
+
+    const guardado = localStorage.getItem(id);
+
+    if(guardado){
+        const estado = JSON.parse(guardado);
+        palabras = estado.palabras;
+        historial = estado.historial;
+    }else{
+        palabras = [...data.lista];
+        historial = [];
+    }
+
     originales = [...data.lista];
+
     document.getElementById("evento").innerText = data.evento || "";
+    document.getElementById("loading").style.display="none";
+
+    if(modoTV === "tv"){
+        document.getElementById("controls").style.display="none";
+    }
+
     crearRuleta();
 })
 .catch(()=>{
-    // fallback demo
-    palabras=["Ejemplo 1","Ejemplo 2","Ejemplo 3"];
-    originales=[...palabras];
-    crearRuleta();
+    document.body.innerHTML = `
+        <h1>Bingo no encontrado</h1>
+        <p>Verifica el enlace.</p>
+    `;
 });
 
 ////////////////////////////////////////////////////
 
 const wheel = document.getElementById("wheel");
+const spinBtn = document.getElementById("spinBtn");
 
+// Genera un color distinto para cada palabra
 function color(i){
-    const colores=["#ff6b6b","#feca57","#48dbfb","#1dd1a1","#5f27cd","#ff9ff3"];
-    return colores[i%colores.length];
+    const hue = Math.floor((360 / palabras.length) * i);
+    return `hsl(${hue}, 75%, 60%)`;
 }
 
 function crearRuleta(){
@@ -242,21 +275,21 @@ document.getElementById("tick").play();
 
 let angle=360/palabras.length;
 
-// Giro totalmente aleatorio
-let extra=Math.random()*360;
+// Elegimos ganador primero
+let index = Math.floor(Math.random()*palabras.length);
 
-rotation = rotation % 360;
-rotation += 360*6 + extra;
+// Calculamos el ángulo exacto donde debe detenerse
+let stopAngle = index * angle + angle/2;
+
+// Siempre hacer giros largos (8 a 12 vueltas)
+let vueltas = 8 + Math.floor(Math.random()*5);
+
+rotation += vueltas*360 + (360 - stopAngle);
 
 wheel.style.transition="transform 5s cubic-bezier(.12,.8,.18,1)";
 wheel.style.transform=`rotate(-${rotation}deg)`;
 
 setTimeout(()=>{
-
-let finalAngle = (rotation % 360);
-let index = Math.floor((finalAngle)/angle);
-index = palabras.length-1-index;
-if(index<0) index=0;
 
 let ganador=palabras.splice(index,1)[0];
 
@@ -283,6 +316,7 @@ girando=false;
 function resetear(){
     palabras=[...originales];
     historial=[];
+    localStorage.removeItem(id);
     document.getElementById("resultado").innerText="";
     crearRuleta();
 }
