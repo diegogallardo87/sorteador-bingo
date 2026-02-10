@@ -152,9 +152,8 @@ canvas{
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id") || "demo";
 
-// Cambia TU_USUARIO y TU_REPO
 const DATA_URL = `https://raw.githubusercontent.com/diegogallardo87/bingo-data/${id}.json`;
-
+    
 let palabras = [];
 let originales = [];
 let historial = [];
