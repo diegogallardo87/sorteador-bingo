@@ -231,19 +231,9 @@ slice.className="slice";
 slice.style.background=color(i);
 slice.style.transform=`rotate(${i*angle}deg) skewY(${90-angle}deg)`;
 
-slice.innerHTML =
+slice.innerHTML=
 `<span style="
-position:absolute;
-left:10px;
-top:50%;
-transform:translateY(-50%) rotate(90deg);
-transform-origin:left center;
-width:180px;
-text-align:left;
-font-size:13px;
-">
-${p}
-</span>`;
+transform:skewY(-${90-angle}deg) rotate(${angle/2}deg);
 display:block;
 width:160px;">
 ${p}
