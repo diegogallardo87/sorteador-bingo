@@ -94,9 +94,42 @@ button{
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 
-let palabras = ["DEMO","RULETA","BINGO","PERSONALIZADO"];
-let originales = [...palabras];
+let palabras = [];
+let originales = [];
 let historial = [];
+
+// Obtener ID desde la URL
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id") || "demo";
+
+// URL del JSON en GitHub (versión estable con jsDelivr)
+const DATA_URL =
+`https://cdn.jsdelivr.net/gh/diegogallardo87/bingo-data@main/bingos/${id}.json`;
+
+// Cargar datos
+fetch(DATA_URL)
+.then(r => {
+    if(!r.ok) throw new Error("No se pudo cargar el JSON");
+    return r.json();
+})
+.then(data => {
+
+    palabras = [...data.lista];
+    originales = [...data.lista];
+
+    document.getElementById("evento").innerText = data.evento || "";
+
+    resizeCanvas(); // dibuja cuando ya tenga datos
+})
+.catch(err=>{
+    console.error("Error cargando JSON:", err);
+
+    // Fallback por si falla GitHub
+    palabras = ["DEMO","RULETA","BINGO","PERSONALIZADO"];
+    originales = [...palabras];
+
+    resizeCanvas();
+});
 
 let rotation = 0;
 let girando = false;
