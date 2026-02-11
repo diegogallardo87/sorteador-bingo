@@ -50,6 +50,11 @@ canvas#wheel{
     0 20px 60px rgba(0,0,0,.4);
 }
 
+    #wheel{
+    width:min(90vw, 500px);
+    height:min(90vw, 500px);
+}
+
 button{
     margin-top:20px;
     padding:14px 35px;
@@ -78,7 +83,7 @@ button{
 <div id="evento"></div>
 
 <div class="pointer"></div>
-<canvas id="wheel" width="500" height="500"></canvas>
+<canvas id="wheel"></canvas>
 
 <div>
 <button onclick="spin()">GIRAR</button>
