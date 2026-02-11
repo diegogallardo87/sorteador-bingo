@@ -20,12 +20,12 @@ body{
 h1{
     margin-top:20px;
     font-weight:800;
-    font-size:56px;
+    font-size:clamp(28px, 6vw, 56px);
     text-shadow:0 6px 20px rgba(0,0,0,.35);
 }
 
 #evento{
-    font-size:36px;
+    font-size:clamp(18px,4vw,36px);
     font-weight:600;
     margin-bottom:15px;
     color:#ffe082;
@@ -50,11 +50,6 @@ canvas#wheel{
     0 20px 60px rgba(0,0,0,.4);
 }
 
-    #wheel{
-    width:min(90vw, 500px);
-    height:min(90vw, 500px);
-}
-
 button{
     margin-top:20px;
     padding:14px 35px;
@@ -69,7 +64,7 @@ button{
 }
 
 #resultado{
-    font-size:64px;
+    font-size:clamp(32px,10vw,64px);
     margin-top:25px;
     font-weight:800;
 }
@@ -111,7 +106,27 @@ let historial = [];
 
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
-const radius = canvas.width/2;
+
+let radius;
+let rotation = 0;
+let lastTickIndex = -1;
+let girando = false;
+
+////////////////////////////////////////////////////
+// RESPONSIVE REAL
+////////////////////////////////////////////////////
+
+function resizeCanvas(){
+    const size = Math.min(window.innerWidth * 0.9, 500);
+    canvas.width = size;
+    canvas.height = size;
+    radius = canvas.width / 2;
+}
+
+window.addEventListener("resize", ()=>{
+    resizeCanvas();
+    drawWheel(rotation);
+});
 
 ////////////////////////////////////////////////////
 // COLOR DINÁMICO
@@ -143,20 +158,19 @@ fetch(DATA_URL)
     originales = [...data.lista];
     document.getElementById("evento").innerText = data.evento || "";
 
+    resizeCanvas();
     drawWheel(rotation);
 })
 .catch(()=>{
     palabras = ["DEMO","RULETA","BINGO","PERSONALIZADO"];
     originales=[...palabras];
+    resizeCanvas();
     drawWheel(rotation);
 });
 
 ////////////////////////////////////////////////////
 // DIBUJAR RULETA
 ////////////////////////////////////////////////////
-
-let rotation = 0;
-let lastTickIndex = -1;
 
 function drawWheel(rotDeg=0){
 
@@ -190,11 +204,14 @@ ctx.translate(radius,radius);
 ctx.rotate(start + angle/2);
 
 ctx.textAlign="right";
-ctx.fillStyle="#fff";
+ctx.fillStyle="#000";
+ctx.strokeStyle="#fff";
+ctx.lineWidth=3;
 
-let fontSize = Math.max(14, 34 - palabras.length*0.7);
+let fontSize = Math.max(14, radius / 12);
 ctx.font=`bold ${fontSize}px Poppins`;
 
+ctx.strokeText(p, radius-20, 8);
 ctx.fillText(p, radius-20, 8);
 
 ctx.restore();
@@ -227,10 +244,8 @@ historial
 }
 
 ////////////////////////////////////////////////////
-// RULETA PERFECTA
+// RULETA
 ////////////////////////////////////////////////////
-
-let girando=false;
 
 function spin(){
 
@@ -262,7 +277,6 @@ let current = rotation + (finalRotation-rotation)*ease;
 
 drawWheel(current);
 
-// EFECTO TICK POR SEGMENTO
 const slice = 360 / palabras.length;
 let tickIndex = Math.floor(((current%360)+360)%360 / slice);
 
@@ -273,14 +287,11 @@ if(tickIndex !== lastTickIndex){
 }
 
 if(progress<1){
-
 requestAnimationFrame(animate);
-
 }else{
 
 rotation = finalRotation % 360;
 
-// calcular ganador REAL
 const pointerDeg = 270;
 let adjusted = (pointerDeg - rotation + 360) % 360;
 const index = Math.floor(adjusted / slice);
@@ -291,7 +302,6 @@ historial.unshift("🎉 "+ganador);
 drawWheel(rotation);
 
 document.getElementById("resultado").innerText=ganador.toUpperCase();
-
 document.getElementById("win").play();
 
 girando=false;
