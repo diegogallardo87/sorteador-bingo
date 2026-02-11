@@ -120,6 +120,7 @@ fetch(DATA_URL)
     document.getElementById("evento").innerText = data.evento || "";
 
     resizeCanvas(); // dibuja cuando ya tenga datos
+    actualizarUI();
 })
 .catch(err=>{
     console.error("Error cargando JSON:", err);
@@ -258,22 +259,46 @@ function spin(){
 
             let ganador = palabras.splice(index,1)[0];
 
-            document.getElementById("resultado").innerText =
-            ganador.toUpperCase();
+// Guardar en historial
+historial.unshift("🎉 " + ganador);
 
-            girando=false;
+// Mostrar ganador grande
+document.getElementById("resultado").innerText =
+ganador.toUpperCase();
+
+// Redibujar sin esa palabra
+drawWheel(rotation);
+
+// Actualizar contador e historial en pantalla
+actualizarUI();
+
+girando=false;
+
         }
     }
 
     requestAnimationFrame(animate);
 }
 
+    function actualizarUI(){
+
+    document.getElementById("contador").innerText =
+    "Quedan " + palabras.length + " palabras";
+
+    document.getElementById("historial").innerHTML =
+    historial.length
+    ? "<b>Ya salieron:</b><br>" + historial.join("<br>")
+    : "";
+}
 ////////////////////////////////////////////////////
 
 function resetear(){
     palabras=[...originales];
+    historial=[];
     rotation=0;
+
     document.getElementById("resultado").innerText="";
+    actualizarUI();
     drawWheel(rotation);
 }
 
