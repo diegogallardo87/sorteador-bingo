@@ -29,6 +29,7 @@ h1{
     border-right:18px solid transparent;
     border-top:35px solid white;
     margin:10px auto -15px auto;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.4));
 }
 
 canvas#wheel{
@@ -53,7 +54,7 @@ button{
 }
 
 #resultado{
-    font-size:72px;
+    font-size:64px;
     margin-top:25px;
     font-weight:800;
 }
@@ -69,7 +70,7 @@ button{
 <div class="pointer"></div>
 <canvas id="wheel" width="500" height="500"></canvas>
 
-<div id="controls">
+<div>
 <button onclick="spin()">GIRAR</button>
 <button onclick="resetear()">REINICIAR</button>
 </div>
@@ -98,7 +99,7 @@ const ctx = canvas.getContext("2d");
 const radius = canvas.width/2;
 
 ////////////////////////////////////////////////////
-// COLOR
+// COLOR DINÁMICO
 ////////////////////////////////////////////////////
 
 function color(i){
@@ -136,10 +137,11 @@ fetch(DATA_URL)
 });
 
 ////////////////////////////////////////////////////
-// DIBUJAR RULETA (MUY IMPORTANTE: recibe rotación)
+// DIBUJAR RULETA
 ////////////////////////////////////////////////////
 
 let rotation = 0;
+let lastTickIndex = -1;
 
 function drawWheel(rotDeg=0){
 
@@ -151,7 +153,7 @@ ctx.clearRect(0,0,canvas.width,canvas.height);
 ctx.save();
 
 ctx.translate(radius,radius);
-ctx.rotate(rotDeg*Math.PI/180);
+ctx.rotate((rotDeg%360)*Math.PI/180);
 ctx.translate(-radius,-radius);
 
 const angle = (2*Math.PI)/palabras.length;
@@ -210,7 +212,7 @@ historial
 }
 
 ////////////////////////////////////////////////////
-// SPIN PERFECTO
+// RULETA PERFECTA
 ////////////////////////////////////////////////////
 
 let girando=false;
@@ -222,24 +224,16 @@ if(palabras.length===0) return;
 
 girando=true;
 
-const slice = 360 / palabras.length;
-const index = Math.floor(Math.random()*palabras.length);
-
-// centro exacto del segmento
-const target = index*slice + slice/2;
-
-// queremos ese centro arriba (puntero)
-const finalOffset = 360 - target;
-
-// vueltas largas SIEMPRE
-const spins = 10 + Math.random()*5;
-
-const finalRotation = rotation + spins*360 + finalOffset;
+const spins = 9 + Math.random()*5;
+const extra = Math.random()*360;
+const finalRotation = rotation + spins*360 + extra;
 
 let start=null;
 const duration=5200;
 
-document.getElementById("tick").play();
+const tickAudio = document.getElementById("tick");
+tickAudio.currentTime = 0;
+tickAudio.play();
 
 function animate(ts){
 
@@ -248,12 +242,20 @@ if(!start) start=ts;
 let progress = (ts-start)/duration;
 progress=Math.min(progress,1);
 
-// easing tipo casino
 let ease = 1-Math.pow(1-progress,5);
-
 let current = rotation + (finalRotation-rotation)*ease;
 
 drawWheel(current);
+
+// EFECTO TICK POR SEGMENTO
+const slice = 360 / palabras.length;
+let tickIndex = Math.floor(((current%360)+360)%360 / slice);
+
+if(tickIndex !== lastTickIndex){
+    tickAudio.currentTime=0;
+    tickAudio.play();
+    lastTickIndex = tickIndex;
+}
 
 if(progress<1){
 
@@ -263,6 +265,11 @@ requestAnimationFrame(animate);
 
 rotation = finalRotation % 360;
 
+// calcular ganador REAL
+const pointerDeg = 270;
+let adjusted = (pointerDeg - rotation + 360) % 360;
+const index = Math.floor(adjusted / slice);
+
 let ganador = palabras.splice(index,1)[0];
 historial.unshift("🎉 "+ganador);
 
@@ -270,7 +277,6 @@ drawWheel(rotation);
 
 document.getElementById("resultado").innerText=ganador.toUpperCase();
 
-document.getElementById("tick").pause();
 document.getElementById("win").play();
 
 girando=false;
