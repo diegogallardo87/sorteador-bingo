@@ -41,7 +41,8 @@ h1{
 
 #wheel{
     width:min(90vw,500px);
-    height:min(90vw,500px);
+    aspect-ratio:1/1;
+    max-width:500px;
     border-radius:50%;
     border:12px solid white;
     box-shadow:
@@ -107,20 +108,15 @@ let radius;
 
 function resizeCanvas(){
 
-    const size = Math.min(window.innerWidth * 0.9, 500);
-
-    // Tamaño visual
-    canvas.style.width = size + "px";
-    canvas.style.height = size + "px";
-
-    // Escala real según densidad de pantalla
+    const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    radius = size / 2;
+    radius = rect.width / 2;
 
     drawWheel(rotation);
 }
